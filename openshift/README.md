@@ -6,9 +6,10 @@ IBM DevOps Test Hub brings together test data, test environments, and test runs 
 
 ### Resources Required
 
-* [RedHat OpenShift Container Platform](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/release_notes/ocp-4-17-release-notes) v4.17 or later (x86_64)
-* [Dynamic Volume Provisioning](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/storage/dynamic-provisioning) supporting accessModes ReadWriteOnce (RWO) and ReadWriteMany (RWX).
-* [Jaeger Operator](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/service_mesh/service-mesh-2-x#installing-ossm) (Optional) If tests should contribute trace information and Jaeger based reports are required.
+* [RedHat OpenShift Container Platform](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/release_notes/ocp-4-18-release-notes) v4.18 or later (x86_64)
+* [Dynamic Volume Provisioning](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/storage/dynamic-provisioning) supporting accessModes ReadWriteOnce (RWO) and ReadWriteMany (RWX).
+* [Jaeger Operator](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/service_mesh/service-mesh-2-x#installing-ossm) (Optional) If tests should contribute trace information and Jaeger based reports are required.
+
 
 
 The product requires a minimum of: (in addition to resources required by the cluster)
@@ -23,7 +24,7 @@ To install the product you will need cluster administrator privileges.
 
 ## Red Hat OpenShift SecurityContextConstraints Requirements
 
-The product is compatible with the `restricted` and `restricted-v2` [SecurityContextConstraint](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/authentication_and_authorization/managing-pod-security-policies).
+The product is compatible with the `restricted` and `restricted-v2` [SecurityContextConstraint](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/authentication_and_authorization/managing-pod-security-policies).
 
 If you would prefer to use the custom ibm-devops-restricted SCC, please do the following before installation:
 
@@ -95,8 +96,8 @@ This change propagates after a couple of minutes. [Further reading](https://clou
 
 ### Local Machine
 
-* [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/cli_tools/openshift-cli-oc)
-* [helm v3.17.4 or later](https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/working-with-helm-charts#installing-helm)
+* [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc)
+* [helm v3.18.5 or later](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/building_applications/working-with-helm-charts#installing-helm)
 
 ### Storage
 
@@ -120,14 +121,18 @@ The default configuration creates claims that dynamically provision the below pe
 The pod [`fsGroup`](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) can be set for these volumes using the Helm `securityContext.fsGroup` value if your volume provisioner requires it.
 
 
+
+
 ## Install
 
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.601
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.700
 cd ibm-devops-prod
 ```
+
+
 
 
 ### Chart
@@ -217,11 +222,13 @@ Before performing your upgrade backup your user data.
 Install the product as [above](#chart).
 
 
+
 ## Backup
 
 ### Velero
 
 Install [velero v14.0.1 or later](https://velero.io/docs/v1.14/basic-install/) and place on your PATH.
+
 
 
 #### [S3](https://github.com/vmware-tanzu/velero-plugin-for-aws)
@@ -255,6 +262,7 @@ velero install \
     --use-node-agent \
     --wait
 ```
+
 
 
 Once velero install is complete, confirmed pods are running by using:

@@ -5,6 +5,9 @@ IBM DevOps Test Hub brings together test data, test environments, and test runs 
 ## Prerequisites
 
 
+
+
+
 ### Hardware
 
 Either a bare metal or virtual machine which is dedicated solely for use by the product.
@@ -29,7 +32,7 @@ If this DNS domain is not available the product will use: _ip-address.nip.io_. S
 
 Either
 
-* RedHat Enterprise Linux 8.10 or later
+* RedHat Enterprise Linux 9.4 or later
 * Ubuntu Server LTS 22.04 or later
 
 You should `Use The Entire Disk And Set Up LVM` using the ext4 or xfs filesystem. No SWAP or home partition should be created. If your organization requires application data to be stored in a separate partition, you may do so by creating a mount point at `/var/lib/rancher/k3s/storage/` with at least 128GiB capacity.
@@ -37,7 +40,7 @@ You should `Use The Entire Disk And Set Up LVM` using the ext4 or xfs filesystem
 #### Install
 
 * OpenSSH server
-* [helm v3.17.4 or later](https://helm.sh/docs/intro/install/)
+* [helm v3.18.5 or later (v4 is NOT SUPPORTED)](https://helm.sh/docs/intro/install/)
 
 #### Do not Install
 
@@ -90,12 +93,13 @@ Older versions of Symantec will still modify file ctime for file extensions `zip
 An exception for the directory `/run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io` must be created to prevent file scans from causing issues.
 
 
+
 ## Install
 
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.601
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.700
 cd ibm-devops-prod
 ```
 
@@ -124,14 +128,14 @@ podman login -u cp cp.icr.io
 Collect all the necessary binaries:
 
 ```sh
-K8S_VERSION=1.33.3
+K8S_VERSION=1.34.2
 K3S_VERSION=k3s1
 
 curl -fo  install.sh \
           https://get.k3s.io
-curl -fO  https://get.helm.sh/helm-v3.17.4-linux-amd64.tar.gz
+curl -fO  https://get.helm.sh/helm-v3.18.5-linux-amd64.tar.gz
 
-curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-11.0.601.tgz
+curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-11.0.700.tgz
 
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s-airgap-images-amd64.tar.zst
@@ -140,7 +144,7 @@ curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3
 RHEL_VERSION=$(grep -oP 'PLATFORM_ID="platform:\K[^"]+' /etc/os-release)
 [[ -n "$RHEL_VERSION" ]] && curl -fOL https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.stable.1/k3s-selinux-1.6-1.${RHEL_VERSION}.noarch.rpm
 
-images="$(tar -xf ibm-devops-11.0.601.tgz ibm-devops-prod/lib/airgap/images.txt -O |
+images="$(tar -xf ibm-devops-11.0.700.tgz ibm-devops-prod/lib/airgap/images.txt -O |
   sed -e 's#^#cp.icr.io/cp/#; s/@.*//')"
 
 xargs -n1 podman pull <<< "${images}"
@@ -155,8 +159,8 @@ This should result in this collection of files to be moved to the target host:
 
 - checksums
 - devops-airgap-images.tar.zst
-- helm-v3.17.4-linux-amd64.tar.gz
-- ibm-devops-11.0.601.tgz
+- helm-v3.18.5-linux-amd64.tar.gz
+- ibm-devops-11.0.700.tgz
 - install.sh
 - k3s
 - k3s-airgap-images-amd64.tar.zst
@@ -184,7 +188,7 @@ dnf install --disablerepo=* -y k3s-selinux-*.rpm
 mkdir -p /var/lib/rancher/k3s/agent/images
 mv *.tar.zst /var/lib/rancher/k3s/agent/images
 
-tar -zxf helm-v3.17.4-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
+tar -zxf helm-v3.18.5-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
 chmod 555 helm
 mv helm /usr/local/bin
 
@@ -195,7 +199,7 @@ exit
 As install user
 
 ```sh
-K8S_VERSION=1.33.3
+K8S_VERSION=1.34.2
 K3S_VERSION=k3s1
 CACHE_K3S_DIR="$HOME/.cache/k3s-${K8S_VERSION}+${K3S_VERSION}"
 mkdir -p "$CACHE_K3S_DIR"
@@ -203,7 +207,7 @@ mv k3s "$CACHE_K3S_DIR/k3s"
 mv install.sh "$CACHE_K3S_DIR/install.sh"
 chmod +x "$CACHE_K3S_DIR/install.sh"
 
-tar -xf ibm-devops-11.0.601.tgz
+tar -xf ibm-devops-11.0.700.tgz
 cd ibm-devops-prod
 chmod +x k3s/*.sh
 
@@ -214,6 +218,8 @@ TESTHUB_EXTRA_HELM_ARGS="-f values-k3s-airgap.yaml"
 ```
 
 Proceed to install the product as [below](#chart).
+
+
 
 
 ### Chart
@@ -339,6 +345,10 @@ helm upgrade $HELM_NAME . -n $NAMESPACE --reuse-values
 Note: Until the full procedure is completed some pods may be in an Unknown state.
 
 
+
+
+
+
 #### Data Migration
 
 RabbitMQ will not run when migrating data to a different namespace. To enable re-initialization during install either:
@@ -366,6 +376,7 @@ All the pods should change to a status of either Running or Complete.
 bash lib/test/helm-diag.sh $HELM_NAME -n $NAMESPACE
 ```
 ## Uninstall
+
 
 
 To delete _EVERYTHING_, including user data

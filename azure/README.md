@@ -5,6 +5,10 @@ IBM DevOps Test Hub brings together test data, test environments, and test runs 
 ## Prerequisites
 
 
+
+
+
+
 Setup an Azure Kubernetes cluster. Here is provided a reference implementation.
 
 To install the product you will need cluster administrator privileges.
@@ -15,12 +19,12 @@ Install [azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cl
 
 Install [kubectl](https://learn.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest#az-aks-install-cli) and place on your PATH.
 
-Install [helm v3.17.4 or later](https://helm.sh/docs/intro/install/) and place on your PATH.
+Install [helm v3.18.5 or later](https://helm.sh/docs/intro/install/) and place on your PATH.
 
 Scripts have been validated using:
 - [Git Bash](https://git-scm.com/downloads) on Windows
 - Azure CLI version 2.71.0 (upgrade using `az upgrade --yes`)
-- Azure Bicep CLI version 0.34.44 (upgrade using `az bicep upgrade`)
+- Azure Bicep CLI version 0.38.33 (upgrade using `az bicep upgrade`)
 
 ```bash
 az login
@@ -89,7 +93,7 @@ kubectl get nodes
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.601
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.700
 cd ibm-devops-prod
 ```
 ### Air gap / Local image registry
@@ -104,6 +108,7 @@ PULL_ARGUMENTS="-g $RESOURCE_GROUP -u cp -p $ENTITLEMENT_REGISTRY_KEY" \
 
 
 ### Ingress controller
+
 
 
 Install Emissary
@@ -211,11 +216,14 @@ Before performing your upgrade backup your user data.
 Install the product as [above](#chart).
 
 
+
 ## Backup
 
 ### Velero
 
 Install [velero v14.0.1 or later](https://velero.io/docs/v1.14/basic-install/) and place on your PATH.
+
+
 
 
 ##### [Setup](https://github.com/vmware-tanzu/velero-plugin-for-microsoft-azure)
@@ -303,6 +311,7 @@ velero install \
     --snapshot-location-config apiTimeout=5m,resourceGroup=$AZURE_BACKUP_RESOURCE_GROUP,subscriptionId=$AZURE_SUBSCRIPTION_ID \
     --wait
 ```
+
 
 
 Once velero install is complete, confirmed pods are running by using:
