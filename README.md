@@ -13,7 +13,7 @@ Each readme relates to the most recent release, prior releases can be found [her
 ## Supported Platforms
 - [Azure Kubernetes Service (AKS)](azure/README.md)  
 - [IBM Red Hat OpenShift](openshift/README.md)  
-- [K3s on RHEL & Ubuntu](k3s/README.md)  
+- [Linux (RHEL & Ubuntu)](k3s/README.md)  
 
 ## Audience
 These guides are intended for administrators and DevOps engineers who want to deploy and manage IBM DevOps Test Hub.  

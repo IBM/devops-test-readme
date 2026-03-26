@@ -40,7 +40,7 @@ You should `Use The Entire Disk And Set Up LVM` using the ext4 or xfs filesystem
 #### Install
 
 * OpenSSH server
-* [helm v3.18.5 or later (v4 is NOT SUPPORTED)](https://helm.sh/docs/intro/install/)
+* [helm v4.0.4 or later](https://helm.sh/docs/intro/install/)
 
 #### Do not Install
 
@@ -99,7 +99,7 @@ An exception for the directory `/run/k3s/containerd/io.containerd.runtime.v2.tas
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.700
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.800
 cd ibm-devops-prod
 ```
 
@@ -128,14 +128,14 @@ podman login -u cp cp.icr.io
 Collect all the necessary binaries:
 
 ```sh
-K8S_VERSION=1.34.2
+K8S_VERSION=1.35.0
 K3S_VERSION=k3s1
 
 curl -fo  install.sh \
           https://get.k3s.io
-curl -fO  https://get.helm.sh/helm-v3.18.5-linux-amd64.tar.gz
+curl -fO  https://get.helm.sh/helm-v4.0.4-linux-amd64.tar.gz
 
-curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-11.0.700.tgz
+curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-11.0.800.tgz
 
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s-airgap-images-amd64.tar.zst
@@ -144,7 +144,7 @@ curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3
 RHEL_VERSION=$(grep -oP 'PLATFORM_ID="platform:\K[^"]+' /etc/os-release)
 [[ -n "$RHEL_VERSION" ]] && curl -fOL https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.stable.1/k3s-selinux-1.6-1.${RHEL_VERSION}.noarch.rpm
 
-images="$(tar -xf ibm-devops-11.0.700.tgz ibm-devops-prod/lib/airgap/images.txt -O |
+images="$(tar -xf ibm-devops-11.0.800.tgz ibm-devops-prod/lib/airgap/images.txt -O |
   sed -e 's#^#cp.icr.io/cp/#; s/@.*//')"
 
 xargs -n1 podman pull <<< "${images}"
@@ -159,8 +159,8 @@ This should result in this collection of files to be moved to the target host:
 
 - checksums
 - devops-airgap-images.tar.zst
-- helm-v3.18.5-linux-amd64.tar.gz
-- ibm-devops-11.0.700.tgz
+- helm-v4.0.4-linux-amd64.tar.gz
+- ibm-devops-11.0.800.tgz
 - install.sh
 - k3s
 - k3s-airgap-images-amd64.tar.zst
@@ -188,7 +188,7 @@ dnf install --disablerepo=* -y k3s-selinux-*.rpm
 mkdir -p /var/lib/rancher/k3s/agent/images
 mv *.tar.zst /var/lib/rancher/k3s/agent/images
 
-tar -zxf helm-v3.18.5-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
+tar -zxf helm-v4.0.4-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
 chmod 555 helm
 mv helm /usr/local/bin
 
@@ -199,7 +199,7 @@ exit
 As install user
 
 ```sh
-K8S_VERSION=1.34.2
+K8S_VERSION=1.35.0
 K3S_VERSION=k3s1
 CACHE_K3S_DIR="$HOME/.cache/k3s-${K8S_VERSION}+${K3S_VERSION}"
 mkdir -p "$CACHE_K3S_DIR"
@@ -207,7 +207,7 @@ mv k3s "$CACHE_K3S_DIR/k3s"
 mv install.sh "$CACHE_K3S_DIR/install.sh"
 chmod +x "$CACHE_K3S_DIR/install.sh"
 
-tar -xf ibm-devops-11.0.700.tgz
+tar -xf ibm-devops-11.0.800.tgz
 cd ibm-devops-prod
 chmod +x k3s/*.sh
 
@@ -268,6 +268,7 @@ Other reasons the script can fail include:
 Some issues can be solved by just re-running `k3s/init.sh`, but k3s logs can be viewed using `journalctl -u k3s`.
 
 If in doubt run `kubectl get pods -A` to see what is not running followed by `kubectl describe pod` for more detail.
+
 ### Configuration
 
 | Parameter                                      | Description | Default |
@@ -290,7 +291,6 @@ If in doubt run `kubectl get pods -A` to see what is not running followed by `ku
 | `networkPolicy.egress.enable`                  | When `network.policy` is enabled create a rule to narrow egress from the product. | false |
 | `networkPolicy.enabled`                        | Deny other software, installed in the cluster, access to the product. | true |
 | `passwordSeed`                                 | The seed used to generate all passwords. | REQUIRED |
-| `postgresql.migrate.enabled`                   | Enable Postgresql version migration on start when coming from v10.5.3. Migration is disabled to avoid an unnecessary image pull. | false |
 | `router.allowedOrigin`                         | A comma separated list of allowed origins for CORS. For example `*.domain.com,*.test.com,10.10.*.*`  | '' |
 | `results.jaegerAgent`                          | The name of the service/host that execution engines write traces to. | '' |
 | `results.jaegerDashboard`                      | The URL for where traces may be opened in a browser. | '' |
@@ -488,7 +488,6 @@ This methods should also be used when restoring a backup made where different se
 
 * `helm rollback` is not currently supported. Move back to a previous release by restoring a backup taken before the upgrade.
 * `helm upgrade` is only supported for specific versions. See [Upgrade](#upgrade) for details.
-* It is not currently possible to edit test assets. This must be done in DevOps Test Workbench.
 * In each namespace, only one instance of the product can be installed.
 * The replica count configuration enables a maximum of 50 active concurrent users. This configuration can not be changed.
 

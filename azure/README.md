@@ -19,12 +19,12 @@ Install [azure cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cl
 
 Install [kubectl](https://learn.microsoft.com/en-us/cli/azure/aks?view=azure-cli-latest#az-aks-install-cli) and place on your PATH.
 
-Install [helm v3.18.5 or later](https://helm.sh/docs/intro/install/) and place on your PATH.
+Install [helm v4.0.4 or later](https://helm.sh/docs/intro/install/) and place on your PATH.
 
 Scripts have been validated using:
 - [Git Bash](https://git-scm.com/downloads) on Windows
 - Azure CLI version 2.71.0 (upgrade using `az upgrade --yes`)
-- Azure Bicep CLI version 0.38.33 (upgrade using `az bicep upgrade`)
+- Azure Bicep CLI version 0.39.26 (upgrade using `az bicep upgrade`)
 
 ```bash
 az login
@@ -93,7 +93,7 @@ kubectl get nodes
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.700
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.800
 cd ibm-devops-prod
 ```
 ### Air gap / Local image registry
@@ -140,6 +140,7 @@ NAMESPACE=devops-system
 HELM_NAME=main
 
 INGRESS_DOMAIN=$INGRESS_IP.nip.io
+# MUST be a wildcard dns name resolving to the svc load balancer IP, and NOT just an IP address.
 PASSWORD_SEED= # secure seed required to generate passwords - unrecoverable so keep it safe
 
 RATIONAL_LICENSE_FILE=@rlks.localdomain
@@ -158,7 +159,34 @@ helm upgrade --install $HELM_NAME . -n $NAMESPACE \
 ```
 * When the ingress domain is accessible to untrusted parties, `signup` must be set to `false`.
 * The password seed is used to generate default passwords and should be stored securely. Its required again to restore from a backup.
+* Only use `values-dedicated-nodes.yaml` if you have labeled and tainted specific nodes or pools to run test assets.
 
+#### External database
+
+In environments where _Azure Disk_ is restricted, an external database is necessary as the integrated database requires efficient block storage. An external database is not recommended in typical usage due to operational complexities; namely latency, backup inconsistency risks and version skew during upgrades.
+
+Requires Azure Database for PostgreSQL version 15.X in the same availability zone as the AKS cluster.
+
+To disable the integrated database and use an external one, add these helm parameters:
+
+```
+EXTERNAL_DB_HOSTNAME=<your-server-name>.postgres.database.azure.com
+EXTERNAL_DB_ADMIN_USERNAME=postgres
+EXTERNAL_DB_ADMIN_PASSWORD=
+
+  --set global.persistence.rwoStorageClass=azurefile \
+  --set postgresql.external=true \
+  --set postgresql.hostname=$EXTERNAL_DB_HOSTNAME \
+  --set postgresql.username=$EXTERNAL_DB_ADMIN_USERNAME \
+  --set postgresql.existingPassword=$EXTERNAL_DB_ADMIN_PASSWORD
+
+```
+
+
+### Troubleshooting
+If in doubt run `kubectl get pods -A` to see what is not running followed by `kubectl describe pod` for more detail.
+
+If pods are `Pending` and `describe` gives no clues, check you're not waiting on storage: `kubectl get pvc -n $NAMESPACE`
 
 ### Configuration
 
@@ -173,6 +201,8 @@ helm upgrade --install $HELM_NAME . -n $NAMESPACE \
 | `global.ibmImagePullSecret`                    | The docker-registry secret to pull images from the `imageRegistry`. | '' |
 | `global.ibmImagePullUsername`                  | Username to pull images from the `imageRegistry`. | 'cp' |
 | `global.ibmImagePullPassword`                  | Password to pull images from the `imageRegistry`. | '' |
+| `global.persistence.rwoStorageClass`           | The storageClass to use if the cluster default is not appropriate. | '' |
+| `global.persistence.rwxStorageClass`           | For environments that do not provide a default StorageClass that supports the ReadWriteMany (RWX) accessMode, this value must be set to a suitable StorageClass that supports ReadWriteMany access. | REQUIRED |
 | `global.privateCaBundleSecretName`             | Name of secret containing `ca.crt`, which lists certificates to trust (in PEM format). | '' |
 | `rationalLicenseKeyServer`                     | Where floating licenses are hosted to entitle use of the product. For example `@ip-address` | '' |
 | `imageRegistry`                                | The location of container images to use. See [move-images](lib/airgap/move-images.sh) | cp.icr.io/cp |
@@ -184,7 +214,6 @@ helm upgrade --install $HELM_NAME . -n $NAMESPACE \
 | `networkPolicy.egress.enable`                  | When `network.policy` is enabled create a rule to narrow egress from the product. | false |
 | `networkPolicy.enabled`                        | Deny other software, installed in the cluster, access to the product. | true |
 | `passwordSeed`                                 | The seed used to generate all passwords. | REQUIRED |
-| `postgresql.migrate.enabled`                   | Enable Postgresql version migration on start when coming from v10.5.3. Migration is disabled to avoid an unnecessary image pull. | false |
 | `priorityClassName`                            | The products pods (excluding dynamic workload) will have this priorityClass. | '' |
 | `priorityClassValue`                           | When set a priorityClass named `priorityClassName` is created with the set priority value. | |
 | `router.allowedOrigin`                         | A comma separated list of allowed origins for CORS. For example `*.domain.com,*.test.com,10.10.*.*`  | '' |
@@ -493,7 +522,6 @@ This methods should also be used when restoring a backup made where different se
 
 * `helm rollback` is not currently supported. Move back to a previous release by restoring a backup taken before the upgrade.
 * `helm upgrade` is only supported for specific versions. See [Upgrade](#upgrade) for details.
-* It is not currently possible to edit test assets. This must be done in DevOps Test Workbench.
 * In each namespace, only one instance of the product can be installed.
 * The replica count configuration enables a maximum of 50 active concurrent users. This configuration can not be changed.
 
