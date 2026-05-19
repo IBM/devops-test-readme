@@ -135,7 +135,7 @@ curl -fo  install.sh \
           https://get.k3s.io
 curl -fO  https://get.helm.sh/helm-v4.0.4-linux-amd64.tar.gz
 
-curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-11.0.800.tgz
+curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-prod-11.0.800.tgz
 
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s-airgap-images-amd64.tar.zst
@@ -144,7 +144,7 @@ curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3
 RHEL_VERSION=$(grep -oP 'PLATFORM_ID="platform:\K[^"]+' /etc/os-release)
 [[ -n "$RHEL_VERSION" ]] && curl -fOL https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.stable.1/k3s-selinux-1.6-1.${RHEL_VERSION}.noarch.rpm
 
-images="$(tar -xf ibm-devops-11.0.800.tgz ibm-devops-prod/lib/airgap/images.txt -O |
+images="$(tar -xf ibm-devops-prod-11.0.800.tgz ibm-devops-prod/lib/airgap/images.txt -O |
   sed -e 's#^#cp.icr.io/cp/#; s/@.*//')"
 
 xargs -n1 podman pull <<< "${images}"
