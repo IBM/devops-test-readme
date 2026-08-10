@@ -40,7 +40,7 @@ You should `Use The Entire Disk And Set Up LVM` using the ext4 or xfs filesystem
 #### Install
 
 * OpenSSH server
-* [helm v4.0.4 or later](https://helm.sh/docs/intro/install/)
+* [helm v4.1.4 or later](https://helm.sh/docs/intro/install/)
 
 #### Do not Install
 
@@ -99,7 +99,7 @@ An exception for the directory `/run/k3s/containerd/io.containerd.runtime.v2.tas
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.800
+helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.900
 cd ibm-devops-prod
 ```
 
@@ -128,14 +128,14 @@ podman login -u cp cp.icr.io
 Collect all the necessary binaries:
 
 ```sh
-K8S_VERSION=1.35.0
+K8S_VERSION=1.36.0
 K3S_VERSION=k3s1
 
 curl -fo  install.sh \
           https://get.k3s.io
-curl -fO  https://get.helm.sh/helm-v4.0.4-linux-amd64.tar.gz
+curl -fO  https://get.helm.sh/helm-v4.1.4-linux-amd64.tar.gz
 
-curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-prod-11.0.800.tgz
+curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-prod-11.0.900.tgz
 
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s-airgap-images-amd64.tar.zst
@@ -144,7 +144,7 @@ curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3
 RHEL_VERSION=$(grep -oP 'PLATFORM_ID="platform:\K[^"]+' /etc/os-release)
 [[ -n "$RHEL_VERSION" ]] && curl -fOL https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.stable.1/k3s-selinux-1.6-1.${RHEL_VERSION}.noarch.rpm
 
-images="$(tar -xf ibm-devops-prod-11.0.800.tgz ibm-devops-prod/lib/airgap/images.txt -O |
+images="$(tar -xf ibm-devops-prod-11.0.900.tgz ibm-devops-prod/lib/airgap/images.txt -O |
   sed -e 's#^#cp.icr.io/cp/#; s/@.*//')"
 
 xargs -n1 podman pull <<< "${images}"
@@ -159,8 +159,8 @@ This should result in this collection of files to be moved to the target host:
 
 - checksums
 - devops-airgap-images.tar.zst
-- helm-v4.0.4-linux-amd64.tar.gz
-- ibm-devops-11.0.800.tgz
+- helm-v4.1.4-linux-amd64.tar.gz
+- ibm-devops-prod-11.0.900.tgz
 - install.sh
 - k3s
 - k3s-airgap-images-amd64.tar.zst
@@ -188,7 +188,7 @@ dnf install --disablerepo=* -y k3s-selinux-*.rpm
 mkdir -p /var/lib/rancher/k3s/agent/images
 mv *.tar.zst /var/lib/rancher/k3s/agent/images
 
-tar -zxf helm-v4.0.4-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
+tar -zxf helm-v4.1.4-linux-amd64.tar.gz --strip=1 --wildcards '*/helm'
 chmod 555 helm
 mv helm /usr/local/bin
 
@@ -199,7 +199,7 @@ exit
 As install user
 
 ```sh
-K8S_VERSION=1.35.0
+K8S_VERSION=1.36.0
 K3S_VERSION=k3s1
 CACHE_K3S_DIR="$HOME/.cache/k3s-${K8S_VERSION}+${K3S_VERSION}"
 mkdir -p "$CACHE_K3S_DIR"
@@ -207,7 +207,7 @@ mv k3s "$CACHE_K3S_DIR/k3s"
 mv install.sh "$CACHE_K3S_DIR/install.sh"
 chmod +x "$CACHE_K3S_DIR/install.sh"
 
-tar -xf ibm-devops-11.0.800.tgz
+tar -xf ibm-devops-prod-11.0.900.tgz
 cd ibm-devops-prod
 chmod +x k3s/*.sh
 
@@ -285,6 +285,8 @@ If in doubt run `kubectl get pods -A` to see what is not running followed by `ku
 | `imageRegistry`                                | The location of container images to use. See [move-images](lib/airgap/move-images.sh) | cp.icr.io/cp |
 | `ingress.cert.create`                          | Create an self-signed certificate matching the ingress domain if none exists in secret `global.ibmCertSecretName`. | true |
 | `ingress.cert.selfSigned`                      | If the ingress domain certificate is not signed by a globally trusted CA. | PLATFORM specifc |
+| `ingress.proxy.addresses`                      | Comma-separated list of trusted proxy IP addresses. When set, only requests from these addresses are trusted to provide X-Forwarded-For headers. | '' |
+| `ingress.proxy.count`                          | Number of trusted proxies between the client and the gateway for X-Forwarded-For parsing. Adjust per environment: 1 for ingress only, 2 for external load balancer. | 1 |
 | `keycloak.truststoreFileHostnameVerificationPolicy` | HTTPS hostname cerificate verifcation policy. ANY (hostname is not verified), WILDCARD (allows wildcards in subdomain names) or STRICT (the Common Name (CN) must match the hostname exactly). | WILDCARD |
 | `license`                                      | Confirmation that the EULA has been accepted. For example `true` | false |
 | `networkPolicy.egress.cidrs`                   | Network ranges to allow access to. This does not include access to github.com where helm test resources are stored. | [ 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 ] |
@@ -298,7 +300,7 @@ If in doubt run `kubectl get pods -A` to see what is not running followed by `ku
 
 ## Upgrade
 
-Upgrading from releases prior to v11.0.3 is not support - for older versions first upgrade to an intermediate release.
+Releases prior to v11.0.8 cannot be upgraded directly; you must first upgrade to an intermediate release.
 
 Before performing your upgrade RabbitMQ flags must be enabled on a running install:
 
