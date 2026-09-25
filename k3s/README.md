@@ -99,7 +99,7 @@ An exception for the directory `/run/k3s/containerd/io.containerd.runtime.v2.tas
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.900
+helm pull --untar ibm-helm/ibm-devops-prod --version 12.0.000
 cd ibm-devops-prod
 ```
 
@@ -128,14 +128,14 @@ podman login -u cp cp.icr.io
 Collect all the necessary binaries:
 
 ```sh
-K8S_VERSION=1.36.0
+K8S_VERSION=1.36.2
 K3S_VERSION=k3s1
 
 curl -fo  install.sh \
           https://get.k3s.io
 curl -fO  https://get.helm.sh/helm-v4.1.4-linux-amd64.tar.gz
 
-curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-prod-11.0.900.tgz
+curl -fO  https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm/ibm-devops-prod-12.0.000.tgz
 
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s
 curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3S_VERSION}/k3s-airgap-images-amd64.tar.zst
@@ -144,7 +144,7 @@ curl -fOL https://github.com/k3s-io/k3s/releases/download/v${K8S_VERSION}%2B${K3
 RHEL_VERSION=$(grep -oP 'PLATFORM_ID="platform:\K[^"]+' /etc/os-release)
 [[ -n "$RHEL_VERSION" ]] && curl -fOL https://github.com/k3s-io/k3s-selinux/releases/download/v1.6.stable.1/k3s-selinux-1.6-1.${RHEL_VERSION}.noarch.rpm
 
-images="$(tar -xf ibm-devops-prod-11.0.900.tgz ibm-devops-prod/lib/airgap/images.txt -O |
+images="$(tar -xf ibm-devops-prod-12.0.000.tgz ibm-devops-prod/lib/airgap/images.txt -O |
   sed -e 's#^#cp.icr.io/cp/#; s/@.*//')"
 
 xargs -n1 podman pull <<< "${images}"
@@ -160,7 +160,7 @@ This should result in this collection of files to be moved to the target host:
 - checksums
 - devops-airgap-images.tar.zst
 - helm-v4.1.4-linux-amd64.tar.gz
-- ibm-devops-prod-11.0.900.tgz
+- ibm-devops-prod-12.0.000.tgz
 - install.sh
 - k3s
 - k3s-airgap-images-amd64.tar.zst
@@ -199,7 +199,7 @@ exit
 As install user
 
 ```sh
-K8S_VERSION=1.36.0
+K8S_VERSION=1.36.2
 K3S_VERSION=k3s1
 CACHE_K3S_DIR="$HOME/.cache/k3s-${K8S_VERSION}+${K3S_VERSION}"
 mkdir -p "$CACHE_K3S_DIR"
@@ -207,7 +207,7 @@ mv k3s "$CACHE_K3S_DIR/k3s"
 mv install.sh "$CACHE_K3S_DIR/install.sh"
 chmod +x "$CACHE_K3S_DIR/install.sh"
 
-tar -xf ibm-devops-prod-11.0.900.tgz
+tar -xf ibm-devops-prod-12.0.000.tgz
 cd ibm-devops-prod
 chmod +x k3s/*.sh
 
@@ -422,14 +422,6 @@ kubectl create secret generic ingress -n $NAMESPACE \
 Where tls.key is your private key, tls.crt is the certificate returned by your CA and ca.crt is the certificate of your CA (which signed your certificate). All these files are expected to be in PEM format. Note: the structure of the secret is consistent with those created by [cert-manager](https://cert-manager.io/docs/)
 
 If the product is already installed. The secret can be replaced, but all the pods must be deleted or restarted manually to take effect.
-
-#### Internal certificate expiry
-
-After 365 days an internal certificate expires, causing the product to stop working. To resolve this:
-```bash
-kubectl delete secret emissary-ingress-webhook-ca -n emissary-system
-kubectl delete pods -lapp.kubernetes.io/name=emissary-apiext -n emissary-system
-```
 
 
 ### Trust of external self signed endpoints

@@ -23,8 +23,8 @@ Install [helm v4.1.4 or later](https://helm.sh/docs/intro/install/) and place on
 
 Scripts have been validated using:
 - [Git Bash](https://git-scm.com/downloads) on Windows
-- Azure CLI version 2.85.0 (upgrade using `az upgrade --yes`)
-- Azure Bicep CLI version 0.42.1 (upgrade using `az bicep upgrade`)
+- Azure CLI version 2.86.0 (upgrade using `az upgrade --yes`)
+- Azure Bicep CLI version 0.43.8 (upgrade using `az bicep upgrade`)
 
 Login to Azure CLI, selecting the target tenant and subscription when prompted.
 ```bash
@@ -93,7 +93,7 @@ kubectl get nodes
 Fetch chart for install:
 ```bash
 helm repo add ibm-helm https://raw.githubusercontent.com/IBM/charts/master/repo/ibm-helm --force-update
-helm pull --untar ibm-helm/ibm-devops-prod --version 11.0.900
+helm pull --untar ibm-helm/ibm-devops-prod --version 12.0.000
 cd ibm-devops-prod
 ```
 ### Air gap / Local image registry
@@ -146,6 +146,7 @@ PASSWORD_SEED= # secure seed required to generate passwords - unrecoverable so k
 RATIONAL_LICENSE_FILE=@rlks.localdomain
 
 helm upgrade --install $HELM_NAME . -n $NAMESPACE \
+  --server-side=true --force-conflicts \
   --create-namespace \
   --set global.domain=$INGRESS_DOMAIN \
   -f values-k8s.yaml \
@@ -166,7 +167,7 @@ helm upgrade --install $HELM_NAME . -n $NAMESPACE \
 
 In environments where _Azure Disk_ is restricted, an external database is necessary as the integrated database requires efficient block storage. An external database is not recommended in typical usage due to operational complexities; namely latency, backup inconsistency risks and version skew during upgrades.
 
-Requires Azure Database for PostgreSQL version 15.X (using PostgreSQL password authentication) in the same availability zone as the AKS cluster.
+Requires Azure Database for PostgreSQL version 18.X (using PostgreSQL password authentication) in the same availability zone as the AKS cluster.
 
 To disable the integrated database and use an external one, add these helm parameters:
 
@@ -225,6 +226,8 @@ If pods are `Pending` and `describe` gives no clues, check you're not waiting on
 | `signup`                                       | Allow users to create their own accounts. (Setting also in realm under Login > User registration) | false |
 
 ## Upgrade
+
+The Ingress controller was upgraded in v12.0.0, re-install it as above to tidy the `emissary-system` namespace. Running the script will cause ingress to stop until `helm upgrade` of the product has been completed.
 
 Releases prior to v11.0.8 cannot be upgraded directly; you must first upgrade to an intermediate release.
 
@@ -455,14 +458,6 @@ kubectl create secret generic ingress -n $NAMESPACE \
 Where tls.key is your private key, tls.crt is the certificate returned by your CA and ca.crt is the certificate of your CA (which signed your certificate). All these files are expected to be in PEM format. Note: the structure of the secret is consistent with those created by [cert-manager](https://cert-manager.io/docs/)
 
 If the product is already installed. The secret can be replaced, but all the pods must be deleted or restarted manually to take effect.
-
-#### Internal certificate expiry
-
-After 365 days an internal certificate expires, causing the product to stop working. To resolve this:
-```bash
-kubectl delete secret emissary-ingress-webhook-ca -n emissary-system
-kubectl delete pods -lapp.kubernetes.io/name=emissary-apiext -n emissary-system
-```
 
 
 ### Trust of external self signed endpoints
